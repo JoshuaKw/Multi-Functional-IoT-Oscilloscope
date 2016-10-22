@@ -1,4 +1,4 @@
-const font[128][8] = {
+const byte font[128][8] = {
 	{},
 	{},
 	{},
