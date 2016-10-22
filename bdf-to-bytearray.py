@@ -1,11 +1,26 @@
 import string
 
-# CHAR_MAP = {'space': ' ',
-#             'one':'1',
-#             'two':'2',
-#             'three':'3',
-#             ''}
-alphabet = list(string.ascii_letters)
+def create_char_map(file_name):
+    mapping = {}
+    with open(file_name, 'r') as glyphlist:
+        for line in glyphlist:
+            words = [word.strip() for word in line.split(';')]
+            abbreviation = words[0]
+            if len(words[1].split(' ')) is 1:
+                uni = words[1]
+                character = unichr(int(uni, 16)).encode('ascii', 'ignore')
+                mapping[abbreviation] = character
+    ascii_mapping = {}
+    for (abbr, char) in mapping.items():
+        if not char == '':
+            ascii_mapping[abbr] = char
+    return ascii_mapping
+
+char_map = create_char_map('glyphlist.txt')
+# print char_map['one']
+
+# alphabet = list(string.ascii_letters)
+all_ascii = list(string.printable)
 WIDTH = 5
 HEIGHT = 8
 
@@ -16,8 +31,8 @@ def read_BDF(file_name, wanted_chars):
         line = bdf.readline()
         while line:
             words = [word.strip() for word in line.split(' ')]
-            if words[0] == 'STARTCHAR':
-                char = words[1]
+            if words[0] == 'STARTCHAR' and words[1] in char_map.keys():
+                char = char_map[words[1]]
                 if char in wanted_chars:
                     char_line = bdf.readline()
                     bdf_char = []
@@ -72,5 +87,6 @@ def write_array(path, font):
             outfile.write('},\n')
         outfile.write('};')
 
-font = read_BDF('5x8.bdf', alphabet)
-write_array('out.cpp', font)
+# font = read_BDF('5x8.bdf', alphabet)
+font = read_BDF('5x8.bdf', all_ascii)
+write_array('lib/out/out.cpp', font)
