@@ -9,3 +9,4 @@ package.json
 /hexMove.sh
 /.externalToolBuilders
 /.settings
+.DS_Store
