@@ -40,7 +40,9 @@ def read_char(char, char_lines):
                 for i in range(HEIGHT):
                     hex_strings.append(char_lines_iter.next())
                 hex_strings = [byte.strip() for byte in hex_strings]
-                binary_plot = ['0b{0:05b}'.format(int(hex_string, 16) >> 3) for hex_string in hex_strings]
+                # flip over x and y axis because of how drawing works
+                binary_plot = list(reversed(['0b'+('{0:05b}'.format(int(hex_string, 16) >> 3)[::-1]) for hex_string in hex_strings]))
+                # binary_plot = list(reversed([('{0:05b}'.format(int(hex_string, 16) >> 3)[::-1]).replace('0', ' ') for hex_string in hex_strings]))
                 # binary_plot = ['{0:05b}'.format(int(hex_string, 16) >> 3).replace('0', ' ') for hex_string in hex_strings]
                 # binary_plot = [bin(int(hex_string, 16) >> 3) for hex_string in hex_strings]
                 # print char, binary_plot
