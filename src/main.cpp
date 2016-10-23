@@ -1,16 +1,24 @@
 #include "Arduino.h"
 #include "out.cpp"
 
-int column = 0;
 #define maxColumns 5
-int row = 0;
 #define maxRows 8
+
 #define rowIncrement 40
 #define columnIncrement 30
-#define numCharacters 11
+
 #define lineBufferSize 50
 
 #define numColumns 26
+#define numRows 5
+
+#define charDimX 5
+#define charDimY 8
+
+#define charSepX 157
+#define charSepY 275
+
+#define potPin A16
 
 struct line {
 	line* next;
@@ -24,47 +32,30 @@ struct line {
 void setupLineBuffer(line** head, line** tail);
 void lineBufferNewLine(line** head, line** tail, int &lineIndex);
 bool lineNewCharacter(line** head, line** tail, int &lineIndex);
+void writeCharacter(char letter, int x, int y);
+void writeLine(char* letters, int y);
+void writeToScreen(line** head);
 
 int main() {
+	analogWriteResolution(12);
+	Serial1.begin(115200);
+	Serial.begin(115200);
 	line* lineBufferHead = nullptr;
 	line* lineBufferTail = nullptr;
 	int lineCharacterIndex = 0;
 	setupLineBuffer(&lineBufferHead, &lineBufferTail);
 
 	while (true) {
-		if (lineNewCharacter(&lineBufferHead, &lineBufferTail, lineCharacterIndex)) {
-			line* temp = lineBufferHead;
-			Serial.println("=============================================================\n");
-			while (temp->next != nullptr) {
-				for (int i = 0; i < numColumns; i++) {
-					Serial.print(temp->lineContents[i]);
-				}
-				Serial.print('\n');
-				temp = temp->next;
-			}
+		while (lineNewCharacter(&lineBufferHead, &lineBufferTail, lineCharacterIndex));
+		if (Serial.available()) {
+			Serial1.write(Serial.read());
 		}
-		//		for (int lineSelect = 0; lineSelect < 15; lineSelect++) {
-		//			for (int charSelect = 0; charSelect < strlen(display[0]);
-		//					charSelect++) {
-		//				for (int y = 0; y < maxRows; y++) {
-		//					for (int x = 0; x < maxColumns; x++) {
-		//						if (((font[display[14 - lineSelect][charSelect]][y] >> x) & 1) != 0) {
-		//							analogWrite(A21,x * columnIncrement + charSelect * 157);
-		//							analogWrite(A22,y * rowIncrement + lineSelect * 280);
-		//							delayMicroseconds(10);
-		//						}
-		//					}
-		//				}
-		//			}
-		//		}
+		writeToScreen(&lineBufferHead);
 	}
-}
-
-void loop() {
+	return 0;
 }
 
 void setupLineBuffer(line** head, line** tail) {
-	Serial.println("setupLineBuffer");
 	*head = new line(nullptr, nullptr);
 	line* tempOld = *head;
 	for (int i = 1; i < lineBufferSize; i++) {
@@ -76,7 +67,6 @@ void setupLineBuffer(line** head, line** tail) {
 }
 
 void lineBufferNewLine(line** head, line** tail, int &lineIndex) {
-	Serial.println("lineBufferNewLine");
 	for (int charPos = 0; charPos < numColumns; charPos++) {
 		(*tail)->lineContents[charPos] = ' ';
 	}
@@ -97,10 +87,8 @@ void lineBufferNewLine(line** head, line** tail, int &lineIndex) {
 
 bool lineNewCharacter(line** head, line** tail, int &lineIndex) {
 	int character;
-	character = Serial.read();
+	character = Serial1.read();
 	if (character >= 0) {
-		Serial.println("lineNewCharacter");
-
 		if ((char) character == '\n') {
 			lineBufferNewLine(head, tail, lineIndex);
 			return true;
@@ -114,3 +102,31 @@ bool lineNewCharacter(line** head, line** tail, int &lineIndex) {
 	}
 	return false;
 }
+
+void writeCharacter(char letter, int xChar, int yChar) {
+	for (int xDot = 0; xDot < charDimX; xDot++) {
+		for (int yDot = 0; yDot < charDimY; yDot++) {
+			if (((font[letter][yDot] >> xDot) & 1) != 0) {
+				analogWrite(A21, xDot * columnIncrement + xChar * charSepX);
+				analogWrite(A22, yDot * rowIncrement + yChar * charSepY);
+				delayMicroseconds(10);
+			}
+		}
+	}
+}
+
+void writeLine(char* letters, int y) {
+	for (int x = 0; x < numColumns; x++) {
+		writeCharacter(letters[x], x, y);
+	}
+}
+void writeToScreen(line** head) {
+	line* temp = *head;
+	for (int y = 0; y < numRows; y++) {
+		if (temp->next != nullptr) {
+			writeLine(temp->lineContents, y);
+			temp = temp->next;
+		}
+	}
+}
+
